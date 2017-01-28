@@ -16,19 +16,14 @@ Upgrading casks
 ![Alt text](https://raw.github.com/jseb/cask-upgrade/screenshots/screenshots/1.png)
 
 ## Try it out
-By simply pasting this in your terminal:
+```
+wget https://raw.github.com/jseb/cask-upgrade/master/cask-upgrade
+chmod +x cask-upgrade
+```
 
-```
-source <(curl https://raw.github.com/jseb/cask-upgrade/master/cask-upgrade)
-```
-And then typing ```cask-upgrade -h```. I recommend using the ```-d``` switch
+And then type ```./cask-upgrade -h```. I recommend using the ```-d``` switch
 for dry run at first, if many large casks are outdated the full upgrade can
 take quite some time.
 
 ## Installation
-Clone the repo (or just download the file), and add this to the end of your
-.bash_profile:
-
-```
-source path/to/cask-upgrade/cask-upgrade
-```
+Put the script file anywhere in your ```PATH```, for example ```/usr/local/bin```
