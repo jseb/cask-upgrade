@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+uninstalled=()
+
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+no_colour=$(tput sgr0)
+
+if ! brew -h > /dev/null || ! brew cask > /dev/null
+then
+    echo "${red}ERROR${no_colour}: Homebrew and/or Homebrew Cask not" \
+        "installed. See http://brew.sh/ and https://caskroom.github.io/"
+    exit 1
+fi
+
+get_outdated() {
+    local infos
+    local outdated
+    local installed_casks
+    installed_casks=$(brew cask list)
+    infos=$(brew cask info $installed_casks)
+    outdated=""
+
+    for cask in $installed_casks
+    do
+        local latest_version
+        latest_version=$(sed -n "s/$cask:\ \(.*\)/\1/p" <<< "$infos")
+
+        if [ ! -d "/usr/local/Caskroom/$cask/$latest_version" ]
+        then
+            outdated+=" $cask"
+        fi
+    done
+
+    echo "$outdated"
+}
+
+upgrade_cask() {
+    local cask="$1"
+
+    echo "${green}==>${no_colour} upgrading ${cask}"
+
+    brew cask uninstall "$cask" --force
+    uninstalled+=($cask)
+
+    retries=3
+
+    until brew cask install "$cask" --force || [ $retries -eq 0 ]
+    do
+        echo "${red}ERROR${no_colour}: Could not install ${cask}, retrying.."
+        retries=$((retries-1))
+    done
+
+    if [ $retries -eq 0 ]
+    then
+        return 1
+    else
+        unset 'uninstalled[${#uninstalled[@]}-1]'
+    fi
+}
+
+upgrade_casks() {
+    local no_outdated
+    no_outdated=$(echo $(wc -w <<< "$1")) # echo to trim leading tab
+    echo -e "${green}==>${no_colour} $no_outdated outdated cask(s):\n${1}"
+
+    if $dryrun
+    then
+        exit 0
+    fi
+
+    for cask in $1; do upgrade_cask "$cask"; done
+    brew cask cleanup
+}
+
+cleanup() {
+    if [ ${#uninstalled[@]} -gt 0 ]
+    then
+        echo "${red}WARNING${no_colour}: The follow cask(s) were uninstalled" \
+            "and not reinstalled:" "${uninstalled[@]}"
+    fi
+}
+
+trap cleanup EXIT
+
+usage() {
+    echo "usage: cask-upgrade [-d|--dryrun] [-n|--no-brew-update] [-h|--help]"
+}
+
+dryrun=false
+brew_update=true
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -h|--help)
+            usage && exit 0
+            ;;
+        -n|--no-brew-update)
+            brew_update=false
+            ;;
+        -d|--dryrun)
+            echo "Dry run mode, no changes will be made"
+            dryrun=true
+            ;;
+        *)
+            usage && exit 1
+            ;;
+    esac
+    shift
+done
+
+main() {
+    if $brew_update
+    then
+        echo "${green}==>${no_colour} updating homebrew"
+        brew update > /dev/null
+    fi
+
+    local outdated
+    outdated=$(get_outdated)
+
+    if [ -z "$outdated" ]
+    then
+        echo "All casks are up to date, nothing do do."
+    else
+        upgrade_casks "$outdated"
+    fi
+}
+
+main
