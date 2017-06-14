@@ -9,7 +9,7 @@ red=$(tput setaf 1)
 green=$(tput setaf 2)
 no_colour=$(tput sgr0)
 
-if ! brew -h > /dev/null || ! brew cask > /dev/null
+if ! brew -h > /dev/null || ! brew cask -h > /dev/null
 then
     echo "${red}ERROR${no_colour}: Homebrew and/or Homebrew Cask not" \
         "installed. See http://brew.sh/ and https://caskroom.github.io/"
