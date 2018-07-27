@@ -27,7 +27,7 @@ get_outdated() {
     for cask in $installed_casks
     do
         local latest_version
-        latest_version=$(sed -n "s/$cask:\ \(.*\)/\1/p" <<< "$infos")
+        latest_version=$(sed -En "s/$cask: (.*)/\1/p" <<< "$infos")
 
         if [ ! -d "/usr/local/Caskroom/$cask/$latest_version" ]
         then
